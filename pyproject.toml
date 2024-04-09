@@ -9,9 +9,7 @@ description = "⚡️Lightning-fast asynchronous download tool for bilibili and 
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.8"
-authors = [
-    { name = "HFrost0", email = "hhlfrost@gmail.com" },
-]
+authors = [{ name = "HFrost0", email = "hhlfrost@gmail.com" }]
 classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
@@ -47,6 +45,7 @@ Homepage = "https://github.com/HFrost0/bilix"
 path = "bilix/__init__.py"
 
 [tool.hatch.build.targets.sdist]
-include = [
-    "/bilix",
-]
+include = ["/bilix"]
+
+[tool.rye]
+managed = true
