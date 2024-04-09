@@ -23,8 +23,8 @@ class CustomLogger(logging.Logger):
         self.addHandler(custom_rich_handler)
 
     word_map: Dict[str, Dict[str, str]] = {
-        'zh_CN': {'done': '已完成', 'exist': '已存在'},
-        'en_US': {'done': 'Done', 'exist': 'Exist'}
+        'zh_CN': {'done': '已完成', 'exist': '已存在', 'failed': '已失败'},
+        'en_US': {'done': 'Done', 'exist': 'Exist', 'failed': 'Failed'}
     }
 
     @property
@@ -40,6 +40,9 @@ class CustomLogger(logging.Logger):
 
     def exist(self, name: str):
         self.info(f"[green]{self.words['exist']:{self._width}}[/green] {name}")
+
+    def failed(self, name: str):
+        self.info(f"[red]{self.words['failed']:{self._width}}[/red] {name}")
 
     def interrupted(self):
         if self.language == 'zh_CN':

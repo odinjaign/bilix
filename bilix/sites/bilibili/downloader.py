@@ -4,6 +4,7 @@ import logging
 import re
 from enum import Enum
 from pathlib import Path
+import shutil
 from typing import Union, Tuple, List, Annotated, Dict, Optional
 import aiofiles
 import httpx
@@ -299,8 +300,13 @@ class DownloaderBilibili(BaseDownloaderPart):
         """
         ps = 30
         up_name, total_size, bv_ids = await api.get_up_video_info(self.client, url_or_mid, 1, ps, order, keyword)
+        self.logger.info(f"[cyan]开始[/cyan] 【up】{up_name}")
         if self.hierarchy:
             path /= legal_title(f"【up】{up_name}")
+            if path.exists():
+                ans: str = input(f"[{path.name}]已存在，是否继续下载？（Y/N）: ")
+                if ans.lower().strip() == "n":
+                    return
             path.mkdir(parents=True, exist_ok=True)
         num = min(total_size, num)
         page_nums = num // ps + min(1, num % ps)
@@ -350,7 +356,7 @@ class DownloaderBilibili(BaseDownloaderPart):
         try:
             async with self.api_sema:
                 video_info = await api.get_video_info(self.client, url)
-        except (APIResourceError, APIUnsupportedError) as e:
+        except Exception as e:
             return self.logger.warning(e)
         if self.hierarchy and len(video_info.pages) > 1:
             path /= video_info.title
@@ -396,6 +402,7 @@ class DownloaderBilibili(BaseDownloaderPart):
             base_name = p_name if len(video_info.title) > self.title_overflow and self.hierarchy and p_name else \
                 task_name
             media_name = base_name if not time_range else legal_title(base_name, *map(t2s, time_range))
+            media_name = f"{video_info.bvid}_{media_name}"
             media_cors = []
             task_id = await self.progress.add_task(total=None, description=task_name)
             if video_info.dash:
@@ -485,8 +492,16 @@ class DownloaderBilibili(BaseDownloaderPart):
                     with open(extra_path / f'{base_name}.json', 'w', encoding='utf-8') as f:
                         f.write(video_info.model_dump_json(exclude={"dash", "other"}))
                     self.logger.done(f'{base_name}.json')
-            path_lst, _ = await asyncio.gather(asyncio.gather(*media_cors), asyncio.gather(*add_cors))
-
+            try:
+                path_lst, _ = await asyncio.gather(asyncio.gather(*media_cors), asyncio.gather(*add_cors))
+            except Exception as e:
+                self.logger.failed(media_name)
+                self.logger.error(str(e))
+                for (_, p) in tmp:
+                    p.exists() and p.is_file() and p.unlink()
+                    p.exists() and p.is_dir() and shutil.rmtree(p)
+                await self.progress.update(task_id, visible=False)
+                return
         if upper := self.progress.tasks[task_id].fields.get('upper', None):
             await upper(path_lst, media_path)
             self.logger.done(media_path.name)
