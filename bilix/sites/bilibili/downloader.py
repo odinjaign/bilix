@@ -303,7 +303,7 @@ class DownloaderBilibili(BaseDownloaderPart):
         self.logger.info(f"[cyan]开始[/cyan] 【up】{up_name}")
         if self.hierarchy:
             path /= legal_title(f"【up】{up_name}")
-            if path.exists():
+            if path.exists() and "CHECK_UP_EXIST" in __import__("os").environ:
                 ans: str = input(f"[{path.name}]已存在，是否继续下载？（Y/N）: ")
                 if ans.lower().strip() == "n":
                     return
